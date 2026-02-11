@@ -17,7 +17,7 @@ warnings.filterwarnings(
 try:
     # Import the official MCP SDK with FastMCP
     from fastmcp import FastMCP
-    from starlette.responses import JSONResponse
+    from starlette.responses import JSONResponse, HTMLResponse
     from starlette.requests import Request
 
 except ImportError:
@@ -69,10 +69,283 @@ class MCPServer:
                 "connect": {
                     "sse_endpoint": f"http://localhost:{self.port}/sse",
                     "http_endpoint": f"http://localhost:{self.port}/mcp",
+                    "ui": f"http://localhost:{self.port}/ui",
                     "stdio": "Use --transport stdio flag"
                 },
                 "docs": "https://github.com/bathas2021/gke-mcp"
             })
+        
+        # Register custom HTTP route for web UI dashboard
+        @self.server.custom_route("/ui", methods=["GET"])
+        async def ui_handler(request: Request):
+            """Return an HTML dashboard for the MCP server."""
+            html_content = f"""
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>GKE MCP Server Dashboard</title>
+                <style>
+                    * {{
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }}
+                    body {{
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        min-height: 100vh;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        padding: 20px;
+                    }}
+                    .container {{
+                        background: white;
+                        border-radius: 12px;
+                        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                        max-width: 900px;
+                        width: 100%;
+                        padding: 40px;
+                    }}
+                    .header {{
+                        text-align: center;
+                        margin-bottom: 40px;
+                        border-bottom: 3px solid #667eea;
+                        padding-bottom: 20px;
+                    }}
+                    .header h1 {{
+                        color: #333;
+                        font-size: 2.5em;
+                        margin-bottom: 10px;
+                    }}
+                    .header p {{
+                        color: #666;
+                        font-size: 1.1em;
+                    }}
+                    .status {{
+                        display: inline-block;
+                        background: #10b981;
+                        color: white;
+                        padding: 8px 16px;
+                        border-radius: 20px;
+                        margin-top: 10px;
+                        font-weight: bold;
+                    }}
+                    .section {{
+                        margin-bottom: 30px;
+                    }}
+                    .section h2 {{
+                        color: #667eea;
+                        font-size: 1.5em;
+                        margin-bottom: 15px;
+                        border-left: 4px solid #667eea;
+                        padding-left: 15px;
+                    }}
+                    .endpoint {{
+                        background: #f8f9fa;
+                        padding: 15px;
+                        border-radius: 8px;
+                        margin-bottom: 10px;
+                        border-left: 4px solid #764ba2;
+                    }}
+                    .endpoint-title {{
+                        font-weight: bold;
+                        color: #333;
+                        margin-bottom: 5px;
+                    }}
+                    .endpoint-url {{
+                        font-family: 'Courier New', monospace;
+                        color: #667eea;
+                        word-break: break-all;
+                    }}
+                    .endpoint-desc {{
+                        color: #666;
+                        font-size: 0.9em;
+                        margin-top: 5px;
+                    }}
+                    .tools-grid {{
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                        gap: 15px;
+                    }}
+                    .tool {{
+                        background: #f8f9fa;
+                        padding: 15px;
+                        border-radius: 8px;
+                        border-left: 4px solid #10b981;
+                    }}
+                    .tool-name {{
+                        font-weight: bold;
+                        color: #333;
+                        margin-bottom: 5px;
+                    }}
+                    .tool-desc {{
+                        color: #666;
+                        font-size: 0.9em;
+                    }}
+                    .badge {{
+                        display: inline-block;
+                        background: #667eea;
+                        color: white;
+                        padding: 4px 10px;
+                        border-radius: 12px;
+                        font-size: 0.8em;
+                        margin-top: 8px;
+                    }}
+                    .links {{
+                        text-align: center;
+                        margin-top: 30px;
+                        padding-top: 20px;
+                        border-top: 1px solid #e0e0e0;
+                    }}
+                    .links a {{
+                        display: inline-block;
+                        margin: 0 15px;
+                        color: #667eea;
+                        text-decoration: none;
+                        font-weight: bold;
+                    }}
+                    .links a:hover {{
+                        text-decoration: underline;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🚀 GKE MCP Server</h1>
+                        <p>Model Context Protocol Server for Kubernetes Management</p>
+                        <div class="status">✓ Running</div>
+                    </div>
+
+                    <div class="section">
+                        <h2>📡 Connection Endpoints</h2>
+                        <div class="endpoint">
+                            <div class="endpoint-title">Root API (JSON)</div>
+                            <div class="endpoint-url">GET http://localhost:{self.port}/</div>
+                            <div class="endpoint-desc">Server information and health status</div>
+                        </div>
+                        <div class="endpoint">
+                            <div class="endpoint-title">Web UI Dashboard</div>
+                            <div class="endpoint-url">GET http://localhost:{self.port}/ui</div>
+                            <div class="endpoint-desc">This dashboard interface</div>
+                        </div>
+                        <div class="endpoint">
+                            <div class="endpoint-title">MCP Protocol (Streaming)</div>
+                            <div class="endpoint-url">GET http://localhost:{self.port}/mcp</div>
+                            <div class="endpoint-desc">MCP JSON-RPC endpoint (requires Accept: text/event-stream header)</div>
+                        </div>
+                        <div class="endpoint">
+                            <div class="endpoint-title">SSE Endpoint</div>
+                            <div class="endpoint-url">GET http://localhost:{self.port}/sse</div>
+                            <div class="endpoint-desc">Server-Sent Events for real-time streaming</div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h2>🛠️ Available Tools</h2>
+                        <p style="color: #666; margin-bottom: 15px;">Pod & Workload Management:</p>
+                        <div class="tools-grid">
+                            <div class="tool">
+                                <div class="tool-name">get_pods</div>
+                                <div class="tool-desc">List all pods in a namespace or the cluster</div>
+                            </div>
+                            <div class="tool">
+                                <div class="tool-name">get_deployments</div>
+                                <div class="tool-desc">Retrieve all deployments</div>
+                            </div>
+                            <div class="tool">
+                                <div class="tool-name">create_deployment</div>
+                                <div class="tool-desc">Create deployments from manifests</div>
+                            </div>
+                            <div class="tool">
+                                <div class="tool-name">scale_deployment</div>
+                                <div class="tool-desc">Scale deployment up or down</div>
+                            </div>
+                            <div class="tool">
+                                <div class="tool-name">delete_resource</div>
+                                <div class="tool-desc">Delete any resource with confirmation</div>
+                            </div>
+                            <div class="tool">
+                                <div class="tool-name">expose_deployment_with_service</div>
+                                <div class="tool-desc">Expose pods/deployments via Kubernetes Service</div>
+                            </div>
+                        </div>
+
+                        <p style="color: #666; margin: 20px 0 15px 0;">Cluster Configuration:</p>
+                        <div class="tools-grid">
+                            <div class="tool">
+                                <div class="tool-name">get_namespaces</div>
+                                <div class="tool-desc">List all namespaces</div>
+                            </div>
+                            <div class="tool">
+                                <div class="tool-name">get_nodes</div>
+                                <div class="tool-desc">View node status and metadata</div>
+                            </div>
+                            <div class="tool">
+                                <div class="tool-name">get_current_context</div>
+                                <div class="tool-desc">Show the current context</div>
+                            </div>
+                            <div class="tool">
+                                <div class="tool-name">switch_context</div>
+                                <div class="tool-desc">Change Kubernetes context</div>
+                            </div>
+                            <div class="tool">
+                                <div class="tool-name">connect_to_gke</div>
+                                <div class="tool-desc">Authenticate and connect to GKE clusters</div>
+                            </div>
+                        </div>
+
+                        <p style="color: #666; margin: 20px 0 15px 0;">Monitoring & Diagnostics:</p>
+                        <div class="tools-grid">
+                            <div class="tool">
+                                <div class="tool-name">get_logs</div>
+                                <div class="tool-desc">Fetch logs from pods with filtering</div>
+                            </div>
+                            <div class="tool">
+                                <div class="tool-name">health_check</div>
+                                <div class="tool-desc">Diagnose cluster or workload health</div>
+                            </div>
+                            <div class="tool">
+                                <div class="tool-name">get_events</div>
+                                <div class="tool-desc">Get recent Kubernetes events</div>
+                            </div>
+                            <div class="tool">
+                                <div class="tool-name">port_forward</div>
+                                <div class="tool-desc">Secure port forwarding to local ports</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h2>📝 Quick Commands</h2>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                            <p style="color: #666; margin-bottom: 10px; font-family: 'Courier New', monospace;">Test root endpoint:</p>
+                            <code style="display: block; background: white; padding: 10px; border-radius: 4px; margin-bottom: 15px; color: #667eea;">
+                                curl http://localhost:{self.port}
+                            </code>
+                            <p style="color: #666; margin-bottom: 10px; font-family: 'Courier New', monospace;">Run in CLI mode (stdio):</p>
+                            <code style="display: block; background: white; padding: 10px; border-radius: 4px; margin-bottom: 15px; color: #667eea;">
+                                python3 -m gke-mcp --transport stdio
+                            </code>
+                            <p style="color: #666; margin-bottom: 10px; font-family: 'Courier New', monospace;">Start SSE server:</p>
+                            <code style="display: block; background: white; padding: 10px; border-radius: 4px; color: #667eea;">
+                                python3 -m gke-mcp --transport sse --port 8001
+                            </code>
+                        </div>
+                    </div>
+
+                    <div class="links">
+                        <a href="https://github.com/bathas2021/gke-mcp" target="_blank">📖 GitHub Repository</a>
+                        <a href="http://localhost:{self.port}/" target="_blank">📊 API Status</a>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            return HTMLResponse(content=html_content)
         
         # Check for required dependencies
         self.dependencies_available = self._check_dependencies()
