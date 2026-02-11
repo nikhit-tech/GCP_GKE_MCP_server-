@@ -1,14 +1,6 @@
 # 🚀 GKE MCP Server – Kubernetes Model Context Protocol
 
-Welcome to the **first GCP-native Management Control Plane (MCP) Server** built by [Shrey Batham](mailto:shreybatham14@gmail.com). This tool enables intelligent, safe, and automated control over your Kubernetes clusters using natural-language-powered operations and native Kubernetes tooling.
-
----
-
-## 👤 Owner
-
-**Name:** Shrey Batham  
-**Email:** [shreybatham14@gmail.com](mailto:shreybatham14@gmail.com)
-**Access Level:** Full Kubernetes Admin, Helm, and kubectl CLI
+Welcome to the **first GCP-native Management Control Plane (MCP) Server**. This tool enables intelligent, safe, and automated control over your Kubernetes clusters using natural-language-powered operations and native Kubernetes tooling.
 
 ---
 
