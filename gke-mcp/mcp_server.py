@@ -17,7 +17,8 @@ warnings.filterwarnings(
 try:
     # Import the official MCP SDK with FastMCP
     from fastmcp import FastMCP
-
+    from starlette.responses import JSONResponse
+    from starlette.requests import Request
 
 except ImportError:
     logging.error("MCP SDK not found. Installing...")
@@ -41,14 +42,38 @@ logger = logging.getLogger("mcp-server")
 class MCPServer:
     """MCP server implementation."""
 
-    def __init__(self, name: str, port: int, path: str):
+    def __init__(self, name: str, port: int, path: str = ""):
         """Initialize the MCP server."""
         self.name = name
         self.port = port
         self.path = path
-        print(path)
+        if path:
+            logger.debug(f"Server path: {path}")
         # Create a new server instance using the FastMCP API
-        self.server = FastMCP(name=name, port=port, host="127.0.0.1",json_response=True)
+        # Note: port, host, and json_response are passed to run_*_async methods instead
+        self.server = FastMCP(name=name)
+        
+        # Register custom HTTP route for root endpoint
+        @self.server.custom_route("/", methods=["GET"])
+        async def root_handler(request: Request):
+            """Return server information and usage instructions."""
+            return JSONResponse({
+                "name": self.name,
+                "status": "running",
+                "message": "GKE MCP Server is running",
+                "info": {
+                    "description": "Model Context Protocol server for Kubernetes management",
+                    "tools_available": "Multiple Kubernetes operations (pods, deployments, services, etc.)",
+                    "transport": "SSE, HTTP, or stdio"
+                },
+                "connect": {
+                    "sse_endpoint": f"http://localhost:{self.port}/sse",
+                    "http_endpoint": f"http://localhost:{self.port}/mcp",
+                    "stdio": "Use --transport stdio flag"
+                },
+                "docs": "https://github.com/bathas2021/gke-mcp"
+            })
+        
         # Check for required dependencies
         self.dependencies_available = self._check_dependencies()
         if not self.dependencies_available:
@@ -1244,14 +1269,23 @@ class MCPServer:
     async def serve_sse(self, port: int):
         """Serve the MCP server over SSE transport."""
         logger.info(f"Starting MCP server with SSE transport on port {port}")
-        # await self.server.run_sse_async(port=port)
-        await self.server.run_sse_async()
+        await self.server.run_http_async(
+            transport="sse",
+            host="127.0.0.1",
+            port=port,
+            show_banner=False
+        )
 
     async def serve_http(self, port: int, path: str):
-        """Serve the MCP server over http transport."""
-        logger.info(f"Starting MCP server with http transport on port {port} and path {path}")
-        # await self.server.run_sse_async(port=port)
-        await self.server.run_http_async()
+        """Serve the MCP server over HTTP transport."""
+        logger.info(f"Starting MCP server with HTTP transport on port {port} and path {path}")
+        await self.server.run_http_async(
+            transport="http",
+            host="127.0.0.1",
+            port=port,
+            path=path,
+            show_banner=False
+        )
             
         
 if __name__ == "__main__":

@@ -19,9 +19,9 @@ def main():
     parser.add_argument(
         "--transport",
         type=str,
-        choices=["stdio", "sse"],
+        choices=["stdio", "sse", "http"],
         default="stdio",
-        help="Communication transport to use (stdio or sse). Default: stdio.",
+        help="Communication transport to use (stdio, sse, or http). Default: stdio.",
     )
     parser.add_argument(
         "--port",
@@ -43,6 +43,9 @@ def main():
         elif args.transport == "sse":
             logger.info(f"Starting {server_name} with SSE transport on port {args.port}.")
             loop.run_until_complete(mcp_server.serve_sse(port=args.port))
+        elif args.transport == "http":
+            logger.info(f"Starting {server_name} with HTTP transport on port {args.port}.")
+            loop.run_until_complete(mcp_server.serve_http(port=args.port, path="/mcp"))
     except KeyboardInterrupt:
         logger.info("Server shutdown requested by user.")
     except Exception as e:

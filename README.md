@@ -35,26 +35,161 @@ pip install -r requirements.txt
 ```
 ---
 ### How to Run the MCP Server
-```
+
+#### **Quick Start (Default - stdio)**
+```bash
 python3 -m gke-mcp --transport stdio
 ```
-📡 Supported --transport Options
 
-| Transport Type      | Description                                                        |
-| ------------------- | ------------------------------------------------------------------ |
-| `stdio` *(default)* | CLI mode using standard input/output.                              |
-| `sse`               | Server-Sent Events mode. Ideal for web-based streaming dashboards. |
-| `http` or  `streamable-http`              | Launches an HTTP server for REST-style access to MCP.|
+#### **📡 Transport Options**
 
-
-🌐 Optional Flags
-| Flag          | Description                                       | Default |
-| ------------- | ------------------------------------------------- | ------- |
-| `--transport` | One of: `stdio`, `sse`, `http`, `streamable-http` | `stdio` |
-| `--port`      | Port for `sse` or `http` transports               | `8001`  |
-| `--path`      | API path for `http` transports                    | `/mcp`  |
+| Transport Type | Description | Best For |
+| ------------------- | ------------------------------------------------------------------ | ------------------- |
+| `stdio` *(default)* | CLI mode using standard input/output. | Direct CLI interaction, Cursor/Claude integration |
+| `sse` | Server-Sent Events streaming. | Web dashboards, client applications, real-time updates |
+| `http` | HTTP server with REST-style access. | Browser access, web UI, external clients |
 
 ---
+
+#### **🚀 Running with Different Transports**
+
+##### **1. stdio Transport (Default)**
+```bash
+# Standard mode - connect via stdin/stdout
+python3 -m gke-mcp --transport stdio
+
+# Use with Cursor AI
+# Add to Cursor settings: {"mcpServers": {"gke-mcp": {"command": "python3", "args": ["-m", "gke-mcp"]}}}
+```
+
+##### **2. SSE Transport (Server-Sent Events)**
+```bash
+# Launch SSE server
+python3 -m gke-mcp --transport sse --port 8001
+
+# Access in browser:
+# http://localhost:8001/sse
+```
+
+**SSE Endpoint Details:**
+- **Full Endpoint:** `http://localhost:8001/sse`
+- **Events:** Real-time streaming of MCP responses
+- **Best for:** Web dashboards, streaming applications
+
+##### **3. HTTP Transport**
+```bash
+# Launch HTTP server
+python3 -m gke-mcp --transport http --port 8001
+
+# Access in browser:
+# http://localhost:8001  (server info & status)
+# http://localhost:8001/mcp  (MCP protocol endpoint)
+```
+
+**HTTP Endpoints:**
+- **Root (`/`):** Server information and status
+  ```bash
+  curl http://localhost:8001
+  # Returns: {name, status, tools_available, connect endpoints}
+  ```
+- **MCP Endpoint (`/mcp`):** Model Context Protocol endpoint
+  ```bash
+  curl -X POST http://localhost:8001/mcp \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}'
+  ```
+
+---
+
+#### **🌐 Optional Flags**
+
+| Flag | Description | Default | Example |
+| --- | --- | --- | --- |
+| `--transport` | Transport type: `stdio`, `sse`, or `http` | `stdio` | `--transport http` |
+| `--port` | Port for `sse` or `http` transports | `8001` | `--port 8002` |
+| `--path` | Custom API path for `http` transport | `/mcp` | `--path /api/mcp` |
+
+---
+
+#### **💻 Browser Access**
+
+**HTTP Transport:**
+```bash
+# Start server
+python3 -m gke-mcp --transport http --port 8001
+
+# Open in browser
+# http://localhost:8001  ← Shows server status & connection info
+```
+
+Response example:
+```json
+{
+  "name": "kubernetes",
+  "status": "running",
+  "message": "GKE MCP Server is running",
+  "info": {
+    "description": "Model Context Protocol server for Kubernetes management",
+    "tools_available": "Multiple Kubernetes operations (pods, deployments, services, etc.)",
+    "transport": "SSE, HTTP, or stdio"
+  },
+  "connect": {
+    "sse_endpoint": "http://localhost:8001/sse",
+    "http_endpoint": "http://localhost:8001/mcp",
+    "stdio": "Use --transport stdio flag"
+  }
+}
+```
+
+---
+
+#### **🔌 Integration Examples**
+
+**Cursor AI Integration (stdio):**
+```json
+// .cursor/config.json or settings
+{
+  "mcpServers": {
+    "gke-mcp": {
+      "command": "python3",
+      "args": ["-m", "gke-mcp", "--transport", "stdio"]
+    }
+  }
+}
+```
+
+**Python Client (HTTP):**
+```python
+import requests
+
+# Get server info
+response = requests.get("http://localhost:8001")
+print(response.json())
+
+# Call MCP method via HTTP
+mcp_request = {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/list",
+    "params": {}
+}
+response = requests.post("http://localhost:8001/mcp", json=mcp_request)
+print(response.json())
+```
+
+**cURL Examples:**
+```bash
+# Check server status
+curl http://localhost:8001
+
+# Get list of available tools (HTTP transport required)
+curl -X POST http://localhost:8001/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+```
+
+---
+
 
 ## 🔧 Supported Operations
 
